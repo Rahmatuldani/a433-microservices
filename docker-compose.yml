@@ -1,0 +1,30 @@
+# Menggunakan Docker Compose versi 2.4 (memenuhi kriteria versi 2 atau lebih)
+version: '2.4'
+
+services:
+  # Definisi service untuk aplikasi
+  item-app:
+    # Menggunakan image yang telah diunggah ke GitHub Packages
+    image: ghcr.io/rahmatuldani/item-app:v1
+    # Memetakan port 80 di host ke port 8080 di container agar bisa diakses publik
+    ports:
+      - "80:8080"
+    # Memastikan aplikasi otomatis restart jika terhenti/error (Restart Policy)
+    restart: always
+    # Menjamin aplikasi hanya berjalan setelah container database (item-db) siap
+    depends_on:
+      - item-db
+
+  # Definisi service untuk database
+  item-db:
+    # Menggunakan image MongoDB versi 3 resmi dari Docker Hub
+    image: mongo:3
+    # Menggunakan volume eksternal agar data tetap tersimpan secara permanen
+    volumes:
+      - app-db:/data/db
+    # Memastikan database otomatis restart jika terhenti (Restart Policy)
+    restart: always
+
+# Mendefinisikan volume bernama app-db untuk penyimpanan data persisten
+volumes:
+  app-db:
