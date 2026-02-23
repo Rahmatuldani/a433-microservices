@@ -39,3 +39,15 @@ jobs:
             IMAGE_TAG="ghcr.io/$GITHUB_USERNAME/karsajobs:latest"
             docker build -t $IMAGE_TAG .
             docker push $IMAGE_TAG
+
+# Buat workflow pipeline
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - lint-dockerfile
+      - test-app
+      - build_app_karsajobs:
+          requires:
+            - lint-dockerfile
+            - test-app
