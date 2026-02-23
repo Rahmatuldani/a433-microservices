@@ -1,0 +1,46 @@
+version: 2.1
+orbs:
+  kubernetes: circleci/kubernetes@1.3.1 # Menggunakan orb resmi untuk kemudahan
+
+jobs:
+  build_and_push:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - setup_remote_docker
+      - run:
+          name: Login to GHCR
+          command: echo "$GITHUB_TOKEN" | docker login ghcr.io -u $GITHUB_USERNAME --password-stdin
+      - run:
+          name: Build and Push Docker Image
+          command: |
+            IMAGE_TAG="ghcr.io/$GITHUB_USERNAME/karsajobs:latest"
+            docker build -t $IMAGE_TAG .
+            docker push $IMAGE_TAG
+
+  deploy_to_k8s:
+    docker:
+      - image: cimg/base:stable
+    steps:
+      - checkout
+      - kubernetes/install-kubectl
+      - run:
+          name: Setup Kubeconfig
+          command: |
+            mkdir -p ~/.kube
+            echo "$KUBECONFIG_DATA" | base64 -d > ~/.kube/config
+      - run:
+          name: Update Kubernetes Deployment
+          command: |
+            kubectl set image deployment/my-deployment \
+              my-container=ghcr.io/$GITHUB_USERNAME/karsajobs:latest
+
+workflows:
+  version: 2
+  build-deploy:
+    jobs:
+      - build_and_push
+      - deploy_to_k8s:
+          requires:
+            - build_and_push
