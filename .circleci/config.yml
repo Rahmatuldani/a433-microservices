@@ -3,7 +3,27 @@ orbs:
   kubernetes: circleci/kubernetes@1.3.1 # Menggunakan orb resmi untuk kemudahan
 
 jobs:
-  build_and_push:
+  # Job baru untuk pengecekan Dockerfile
+  lint-dockerfile:
+    docker:
+      - image: hadolint/hadolint:latest-debian
+    steps:
+      - checkout
+      - run:
+          name: Run Hadolint
+          command: hadolint Dockerfile
+
+  # Job baru untuk unit test aplikasi Go
+  test-app:
+    docker:
+      - image: cimg/go:1.21 # Sesuaikan versi Go
+    steps:
+      - checkout
+      - run:
+          name: Run Unit Tests
+          command: go test -v -short --count=1 $(go list ./...)
+
+  build_app_karsajobs:
     docker:
       - image: cimg/base:stable
     steps:
@@ -19,29 +39,3 @@ jobs:
             IMAGE_TAG="ghcr.io/$GITHUB_USERNAME/karsajobs:latest"
             docker build -t $IMAGE_TAG .
             docker push $IMAGE_TAG
-
-  deploy_to_k8s:
-    docker:
-      - image: cimg/base:stable
-    steps:
-      - checkout
-      - kubernetes/install-kubectl
-      - run:
-          name: Setup Kubeconfig
-          command: |
-            mkdir -p ~/.kube
-            echo "$KUBECONFIG_DATA" | base64 -d > ~/.kube/config
-      - run:
-          name: Update Kubernetes Deployment
-          command: |
-            kubectl set image deployment/my-deployment \
-              my-container=ghcr.io/$GITHUB_USERNAME/karsajobs:latest
-
-workflows:
-  version: 2
-  build-deploy:
-    jobs:
-      - build_and_push
-      - deploy_to_k8s:
-          requires:
-            - build_and_push
