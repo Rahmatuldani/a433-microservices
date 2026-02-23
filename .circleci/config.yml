@@ -26,7 +26,7 @@ jobs:
       - run:
           name: Build and Push Docker Image
           command: |
-            IMAGE_TAG="ghcr.io/$GITHUB_USERNAME/karsajobs:latest"
+            IMAGE_TAG="ghcr.io/$GITHUB_USERNAME/karsajobs-ui:latest"
             docker build -t $IMAGE_TAG .
             docker push $IMAGE_TAG
 
